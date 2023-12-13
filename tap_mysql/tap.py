@@ -160,6 +160,15 @@ class TapMySQL(SQLTap):
             required=False,
             description="SSH Tunnel Configuration, this is a json object",
         ),
+        th.Property(
+            "selected_tables",
+            th.ArrayType(th.StringType),
+            description=(
+                "If an array of table names is provided, the tap will only process "
+                "the specified tables during discovery and ignore others. If left blank, the "
+                "tap automatically discovers ALL available MySQL tables."
+            ),
+        ),
     ).to_dict()
 
     def get_sqlalchemy_url(self, config: Mapping[str, Any]) -> str:

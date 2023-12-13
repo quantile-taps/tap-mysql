@@ -1,6 +1,7 @@
 """SQL client handling."""
 from __future__ import annotations
 
+import logging
 import datetime
 from typing import TYPE_CHECKING, Any, Iterable
 
@@ -171,6 +172,37 @@ class MySQLConnector(SQLConnector):
         if "filter_schemas" in self.config and len(self.config["filter_schemas"]) != 0:
             return self.config["filter_schemas"]
         return super().get_schema_names(engine, inspected)
+    
+    def discover_catalog_entries(self) -> list[dict]:
+        """Return a list of catalog entries from discovery.
+
+        Returns:
+            The discovered catalog entries as a list.
+        """
+        result: list[dict] = []
+        engine = self._engine
+        inspected = sqlalchemy.inspect(engine)
+        for schema_name in self.get_schema_names(engine, inspected):
+            # Iterate through each table and view
+            for table_name, is_view in self.get_object_names(
+                engine,
+                inspected,
+                schema_name,
+            ):
+                if "selected_tables" in self.config and table_name not in self.config["selected_tables"]:
+                    logging.info(f"Skipping discovery for table: {table_name}")
+                    continue
+
+                catalog_entry = self.discover_catalog_entry(
+                    engine,
+                    inspected,
+                    schema_name,
+                    table_name,
+                    is_view,
+                )
+                result.append(catalog_entry.to_dict())
+
+        return result
 
 
 class MySQLStream(SQLStream):
